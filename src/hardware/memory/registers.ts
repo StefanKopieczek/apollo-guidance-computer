@@ -1,5 +1,5 @@
-import { assertShape, assertWidth } from '../bitutils/bitAsserts'
-import { cycleLeft, cycleRight, edop, shiftRight } from '../bitutils/math'
+import { assertShape, assertWidth } from '../../bitutils/bitAsserts'
+import { cycleLeft, cycleRight, edop, shiftRight } from '../../bitutils/math'
 
 export class Registers {
   _a = 0
