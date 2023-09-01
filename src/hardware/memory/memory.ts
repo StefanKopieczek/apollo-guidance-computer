@@ -90,7 +90,6 @@ export class Memory {
           kind: 'banked',
           memoryType: 'fixed',
           bankId,
-          
           offset: instruction & 0o1777 // Last 10 bits of the instruction
         }
       }
