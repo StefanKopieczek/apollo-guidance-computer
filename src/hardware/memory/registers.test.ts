@@ -168,3 +168,21 @@ test('Set and get register QRUPT', () => {
 test('Register QRUPT forbids 16 bit values', () => {
     expect(() => registers.QRUPT = 0o100000).toThrow(ValueTooWideError)
 })
+
+test('Set and get register SAMPTIME_1', () => {
+    registers.SAMPTIME_1 = 0o54321
+    expect(registers.SAMPTIME_1).toEqual(0o54321)  
+})
+  
+test('Register SAMPTIME_1 forbids 16 bit values', () => {
+    expect(() => registers.SAMPTIME_1 = 0o100000).toThrow(ValueTooWideError)
+})
+
+test('Set and get register SAMPTIME_2', () => {
+    registers.SAMPTIME_2 = 0o54321
+    expect(registers.SAMPTIME_2).toEqual(0o54321)  
+})
+  
+test('Register SAMPTIME_2 forbids 16 bit values', () => {
+    expect(() => registers.SAMPTIME_2 = 0o100000).toThrow(ValueTooWideError)
+})
