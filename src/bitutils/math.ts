@@ -7,7 +7,7 @@ export function cycleRight (n: number): number {
 
 export function cycleLeft (n: number): number {
   assertWidth(n, 15)
-  return (n >>> 14) | ((n << 14) & 0o77776)
+  return (n >>> 14) | ((n << 1) & 0o77776)
 }
 
 export function edop (n: number): number {
