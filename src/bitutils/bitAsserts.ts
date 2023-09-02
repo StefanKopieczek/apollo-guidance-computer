@@ -29,7 +29,7 @@ export class InvalidShapeError extends Error {
   constructor (value: number, shape: number) {
     const valueBinString: string = (value >>> 0).toString(2).padStart(15, '0')
     const shapeBinString: string = (shape >>> 0).toString(2).padStart(15, '0')
-    super(`Value ${value} (${valueBinString} did not have the expected shape ${shapeBinString})`)
+    super(`Value ${value} (${valueBinString}) did not have the expected shape ${shapeBinString}`)
     this.value = value
     this.shape = shape
   }
