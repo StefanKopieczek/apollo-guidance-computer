@@ -1,5 +1,6 @@
 import { Registers } from "./registers";
 import { ValueTooWideError } from "../../bitutils/bitAsserts";
+import { cycleLeft, cycleRight, edop, shiftRight } from "../../bitutils/math";
 
 let registers = new Registers()
 
@@ -212,4 +213,40 @@ test('Set and get register BRUPT', () => {
   
 test('Register BRUPT forbids 16 bit values', () => {
     expect(() => registers.BRUPT = 0o100000).toThrow(ValueTooWideError)
+})
+
+test('Set and get register CYR', () => {
+    registers.CYR = 0o54321
+    expect(registers.CYR).toEqual(cycleRight(0o54321))
+})
+
+test('Register CYR forbids 16 bit values', () => {
+    expect(() => registers.CYR = 0o100000).toThrow(ValueTooWideError)
+})
+
+test('Set and get register SR', () => {
+    registers.SR = 0o54321
+    expect(registers.SR).toEqual(shiftRight(0o54321))
+})
+
+test('Register SR forbids 16 bit values', () => {
+    expect(() => registers.SR = 0o100000).toThrow(ValueTooWideError)
+})
+
+test('Set and get register CYL', () => {
+    registers.CYL = 0o54321
+    expect(registers.CYL).toEqual(cycleLeft(0o54321))
+})
+
+test('Register CYL forbids 16 bit values', () => {
+    expect(() => registers.CYL = 0o100000).toThrow(ValueTooWideError)
+})
+
+test('Set and get register EDOP', () => {
+    registers.EDOP = 0o54321
+    expect(registers.EDOP).toEqual(edop(0o54321))
+})
+
+test('Register EDOP forbids 16 bit values', () => {
+    expect(() => registers.EDOP = 0o100000).toThrow(ValueTooWideError)
 })
