@@ -141,3 +141,30 @@ test('BBANK sets EBANK and FBANK (#2)', () => {
     expect(registers.FBANK).toEqual(0o52000)
     expect(registers.EBANK).toEqual(0o1400)
 })
+
+test('Set and get register ARUPT', () => {
+    registers.ARUPT = 0o54321
+    expect(registers.ARUPT).toEqual(0o54321)  
+})
+  
+test('Register ARUPT forbids 16 bit values', () => {
+    expect(() => registers.ARUPT = 0o100000).toThrow(ValueTooWideError)
+})
+
+test('Set and get register LRUPT', () => {
+    registers.LRUPT = 0o54321
+    expect(registers.LRUPT).toEqual(0o54321)  
+})
+  
+test('Register LRUPT forbids 16 bit values', () => {
+    expect(() => registers.LRUPT = 0o100000).toThrow(ValueTooWideError)
+})
+
+test('Set and get register QRUPT', () => {
+    registers.QRUPT = 0o54321
+    expect(registers.QRUPT).toEqual(0o54321)  
+})
+  
+test('Register QRUPT forbids 16 bit values', () => {
+    expect(() => registers.QRUPT = 0o100000).toThrow(ValueTooWideError)
+})
