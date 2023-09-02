@@ -186,3 +186,30 @@ test('Set and get register SAMPTIME_2', () => {
 test('Register SAMPTIME_2 forbids 16 bit values', () => {
     expect(() => registers.SAMPTIME_2 = 0o100000).toThrow(ValueTooWideError)
 })
+
+test('Set and get register ZRUPT', () => {
+    registers.ZRUPT = 0o54321
+    expect(registers.ZRUPT).toEqual(0o54321)  
+})
+  
+test('Register ZRUPT forbids 16 bit values', () => {
+    expect(() => registers.ZRUPT = 0o100000).toThrow(ValueTooWideError)
+})
+
+test('Set and get register BBRUPT', () => {
+    registers.BBRUPT = 0o54321
+    expect(registers.BBRUPT).toEqual(0o54321)  
+})
+  
+test('Register BBRUPT forbids 16 bit values', () => {
+    expect(() => registers.BBRUPT = 0o100000).toThrow(ValueTooWideError)
+})
+
+test('Set and get register BRUPT', () => {
+    registers.BRUPT = 0o54321
+    expect(registers.BRUPT).toEqual(0o54321)  
+})
+  
+test('Register BRUPT forbids 16 bit values', () => {
+    expect(() => registers.BRUPT = 0o100000).toThrow(ValueTooWideError)
+})
