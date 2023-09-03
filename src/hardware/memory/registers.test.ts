@@ -143,6 +143,12 @@ test('BBANK sets EBANK and FBANK (#2)', () => {
   expect(registers.EBANK).toEqual(0o1400)
 })
 
+test('EBANK and FBANK set BBANK', () => {
+  registers.EBANK = 0o1400
+  registers.FBANK = 0o52000
+  expect(registers.BBANK).toEqual(0o52003)
+})
+
 test('Set and get register ARUPT', () => {
   registers.ARUPT = 0o54321
   expect(registers.ARUPT).toEqual(0o54321)

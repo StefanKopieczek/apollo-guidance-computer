@@ -56,7 +56,7 @@ export class Memory {
   }
 
   deduceAddress (instruction: number): MemoryRef {
-    const isErasable = (instruction & 0o06000) > 0
+    const isErasable = (instruction & 0o06000) == 0
     if (isErasable) {
       // Switched erasable memory is used only when bits 10 and 9 are set.
       const isDirect = (instruction & 0o1400) !== 0o1400
