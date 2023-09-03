@@ -25,8 +25,11 @@ export class Memory {
       } else {
         canonicalRef = this.convertToBanked(ref)
       }
-    } else {
+    } else if (ref.kind === 'banked') {
       canonicalRef = ref
+    } else {
+      // Dead bank
+      return 0
     }
 
     const bankArray = (canonicalRef.memoryType === 'erasable') ? this.erasable : this.fixed
@@ -47,16 +50,21 @@ export class Memory {
       } else {
         canonicalRef = this.convertToBanked(ref)
       }
-    } else {
+    } else if (ref.kind === 'banked') {
       canonicalRef = ref
+    } else {
+      // Dead bank
+      return
     }
+
+    // TODO prevent writes to fixed storage
 
     const bankArray = (canonicalRef.memoryType === 'erasable') ? this.erasable : this.fixed
     bankArray.getBank(canonicalRef.bankId)[canonicalRef.offset] = value
   }
 
   deduceAddress (instruction: number): MemoryRef {
-    const isErasable = (instruction & 0o06000) == 0
+    const isErasable = (instruction & 0o06000) === 0
     if (isErasable) {
       // Switched erasable memory is used only when bits 10 and 9 are set.
       const isDirect = (instruction & 0o1400) !== 0o1400
@@ -82,48 +90,51 @@ export class Memory {
           address: instruction & 0o7777 // Last 12 bits of the instruction
         }
       } else {
-        let bankId = this.registers.FBANK
+        let bankId = this.registers.FBANK >>> 10
         if (bankId >= 0o30 && this.isSuperbankSet) {
+          // The superbank bit only applies if the top two bits of the FBANK
+          // are 11.
           bankId += 0o10
         }
-        return {
-          kind: 'banked',
-          memoryType: 'fixed',
-          bankId,
-          offset: instruction & 0o1777 // Last 10 bits of the instruction
+        if (bankId <= 0o43) {
+          return {
+            kind: 'banked',
+            memoryType: 'fixed',
+            bankId,
+            offset: instruction & 0o1777 // Last 10 bits of the instruction
+          }
+        } else {
+          // Banks 36, 37, 38 and 39 are addressable, but don't actually exist.
+          return { kind: 'deadbank' }
         }
       }
     }
   }
 
-  private convertToBanked (ref: MemoryRef): BankedRef {
-    if (ref.kind === 'direct') {
-      if (this.isRegister(ref.address)) {
-        throw Error(`Address ${ref.address.toString(8)} points to a register, and can't be converted to a BankedRef`)
-      } else if (ref.address < 0o1400) {
-        // E0, E1 and E2 are permanently mapped to the start of memory
-        // (except where the address maps to a register).
-        // They are consecutive, and each occupies 0o400 words.
-        return {
-          kind: 'banked',
-          memoryType: 'erasable',
-          bankId: Math.trunc(ref.address / this.erasable.bankSize),
-          offset: ref.address % this.erasable.bankSize
-        }
-      } else if ((ref.address > 0o4000) && (ref.address < 0o10000)) {
-        // F2 and F3 are permanently mapped to 0o4000-0o5777 and 0o6000-0o7777 respectively.
-        const bankId = ref.address < 0o6000 ? 2 : 3
-        return {
-          kind: 'banked',
-          memoryType: 'fixed',
-          bankId,
-          offset: ref.address - 0o4000 - (bankId === 2 ? 0 : 1)
-        }
-      } else {
-        throw new AddressOutOfBoundsError(`Invalid direct reference address ${ref.address.toString(8)}`)
+  private convertToBanked (ref: DirectRef): BankedRef {
+    if (this.isRegister(ref.address)) {
+      throw Error(`Address ${ref.address.toString(8)} points to a register, and can't be converted to a BankedRef`)
+    } else if (ref.address < 0o1400) {
+      // E0, E1 and E2 are permanently mapped to the start of memory
+      // (except where the address maps to a register).
+      // They are consecutive, and each occupies 0o400 words.
+      return {
+        kind: 'banked',
+        memoryType: 'erasable',
+        bankId: Math.trunc(ref.address / this.erasable.bankSize),
+        offset: ref.address % this.erasable.bankSize
+      }
+    } else if ((ref.address > 0o4000) && (ref.address < 0o10000)) {
+      // F2 and F3 are permanently mapped to 0o4000-0o5777 and 0o6000-0o7777 respectively.
+      const bankId = ref.address < 0o6000 ? 2 : 3
+      return {
+        kind: 'banked',
+        memoryType: 'fixed',
+        bankId,
+        offset: ref.address - 0o4000 - (bankId === 2 ? 0 : 1)
       }
     } else {
-      return ref
+      throw new AddressOutOfBoundsError(`Invalid direct reference address ${ref.address.toString(8)}`)
     }
   }
 
@@ -276,7 +287,7 @@ export class Memory {
  * addressed either without banking (DirectRef) or with banking (BankedRef),
  * it's possible for two different MemoryRefs to point to the same memory cell.
  **/
-export type MemoryRef = DirectRef | BankedRef
+export type MemoryRef = DirectRef | BankedRef | DeadBank
 
 export interface DirectRef {
   /**
@@ -293,6 +304,14 @@ export interface BankedRef {
   readonly memoryType: 'erasable' | 'fixed'
   readonly bankId: number
   readonly offset: number
+}
+
+export interface DeadBank {
+  /**
+   * A reference to a bank that does not exist.
+   * Writes should be dropped; reads should return all 0s.
+   */
+  readonly kind: 'deadbank'
 }
 
 export class AddressOutOfBoundsError extends Error {}
