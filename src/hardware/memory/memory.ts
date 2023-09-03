@@ -202,19 +202,19 @@ export class Memory {
       case 0o1:
         this.registers.L = value
         break
-      case 0o2:        
+      case 0o2:
         this.registers.Q = value
         break
-      case 0o3:        
+      case 0o3:
         this.registers.EBANK = value
         break
-      case 0o4:        
+      case 0o4:
         this.registers.FBANK = value
         break
-      case 0o5:        
+      case 0o5:
         this.registers.Z = value & 0o7777
         break
-      case 0o6:        
+      case 0o6:
         this.registers.BBANK = value & 0b111_110_000_000_111
         break
       case 0o7:
