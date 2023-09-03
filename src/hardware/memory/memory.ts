@@ -202,24 +202,19 @@ export class Memory {
       case 0o1:
         this.registers.L = value
         break
-      case 0o2:
-        // Q is 12 bits wide.
-        this.registers.Q = value & 0x7777
+      case 0o2:        
+        this.registers.Q = value
         break
-      case 0o3:
-        // EBANK occupies three bits: 9, 10 and 11.
-        this.registers.EBANK = value & 0b000_011_100_000_000
+      case 0o3:        
+        this.registers.EBANK = value
         break
-      case 0o4:
-        // FBANK occupies the top five bits.
-        this.registers.FBANK = value & 0b111_110_000_000_000
+      case 0o4:        
+        this.registers.FBANK = value
         break
-      case 0o5:
-        // Z is 12 bits wide.
+      case 0o5:        
         this.registers.Z = value & 0o7777
         break
-      case 0o6:
-        // BBANK has the form FFF FF0 000 000 EEE.
+      case 0o6:        
         this.registers.BBANK = value & 0b111_110_000_000_111
         break
       case 0o7:
