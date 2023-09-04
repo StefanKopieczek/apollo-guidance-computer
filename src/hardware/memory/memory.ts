@@ -183,8 +183,10 @@ export class Memory {
         return this.registers.SAMPTIME_2
       case 0o15:
         return this.registers.ZRUPT
-      case 0o17:
+      case 0o16:
         return this.registers.BBRUPT
+      case 0o17:
+        return this.registers.BRUPT
       case 0o20:
         return this.registers.CYR
       case 0o21:
@@ -248,8 +250,11 @@ export class Memory {
       case 0o15:
         this.registers.ZRUPT = value
         break
-      case 0o17:
+      case 0o16:
         this.registers.BBRUPT = value
+        break
+      case 0o17:
+        this.registers.BRUPT = value
         break
       case 0o20:
         this.registers.CYR = value

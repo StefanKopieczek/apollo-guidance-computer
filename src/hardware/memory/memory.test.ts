@@ -1,8 +1,13 @@
+import { cycleLeft, cycleRight, edop, shiftRight } from '../../bitutils/math'
 import { Environment } from '../../environment'
-import { Memory, DirectRef } from './memory'
+import { Memory, DirectRef, AddressOutOfBoundsError } from './memory'
 
 const environment = Environment.COMMAND_MODULE
-const memory = new Memory(environment)
+let memory = new Memory(environment)
+
+beforeEach(() => {
+  memory = new Memory(environment)
+})
 
 test('Resolve unswitched erasable address 0', () => {
   expect(memory.deduceAddress(0)).toEqual({
@@ -204,4 +209,565 @@ test('Switched fixed bank 39 is dead', () => {
   expect(memory.deduceAddress(0o3000)).toEqual({
     kind: 'deadbank'
   })
+})
+
+test('Read from unswitched erasable (#1)', () => {
+  memory.erasable.getBank(0)[0o100] = 0o12345
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o100
+  })).toEqual(0o12345)
+})
+
+test('Read from to unswitched erasable (#2)', () => {
+  // Each bank is 0o400 wide, so unswitched address 0o1234 points to bank 2 offset 0o234.
+  memory.erasable.getBank(2)[0o234] = 0o54321
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o1234
+  })).toEqual(0o54321)
+})
+
+test('Write to unswitched erasable (#1)', () => {
+  memory.write({
+    kind: 'direct',
+    address: 0o100
+  }, 0o12345)
+  expect(memory.erasable.getBank(0)[0o100]).toEqual(0o12345)
+})
+
+test('Write to unswitched erasable (#2)', () => {
+  // Each bank is 0o400 wide, so unswitched address 0o1234 points to bank 2 offset 0o234.
+  memory.write({
+    kind: 'direct',
+    address: 0o1234
+  }, 0o54321)
+  expect(memory.erasable.getBank(2)[0o234]).toEqual(0o54321)
+})
+
+test('Memory is initialized to zero', () => {
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o1234
+  })).toBe(0)
+})
+
+test('Direct out of bounds erasable read throws exception', () => {
+  // This is out of bounds because it points into switched memory, which
+  // the MemoryRef convention prevents (should use a BankedRef instead)
+  expect(() => {
+    memory.read({
+      kind: 'direct',
+      address: 0o1400
+    })
+  }).toThrow(AddressOutOfBoundsError)
+})
+
+test('Direct out of bounds fixed read throws exception (#1)', () => {
+  // This is out of bounds because it points into switched memory, which
+  // the MemoryRef convention prevents (should use a BankedRef instead)
+  expect(() => {
+    memory.read({
+      kind: 'direct',
+      address: 0o4000
+    })
+  }).toThrow(AddressOutOfBoundsError)
+})
+
+test('Direct out of bounds fixed read throws exception (#2)', () => {
+  // This address is beyond the maximum address.
+  expect(() => {
+    memory.read({
+      kind: 'direct',
+      address: 0o10000
+    })
+  }).toThrow(AddressOutOfBoundsError)
+})
+
+test('Test read from erasable bank 0', () => {
+  memory.erasable.getBank(0)[0o200] = 0o3565
+  expect(memory.read({
+      kind: 'banked',
+      bankId: 0,
+      offset: 0o200,
+      memoryType: 'erasable'
+    })
+  ).toEqual(0o3565)
+})
+
+test('Test read from erasable bank 1', () => {
+  memory.erasable.getBank(1)[0o300] = 0o4321
+  expect(memory.read({
+      kind: 'banked',
+      bankId: 1,
+      offset: 0o300,
+      memoryType: 'erasable'
+    })
+  ).toEqual(0o4321)
+})
+
+test('Test read from erasable bank 7', () => {
+  memory.erasable.getBank(7)[0o323] = 0o12345
+  expect(memory.read({
+      kind: 'banked',
+      bankId: 7,
+      offset: 0o323,
+      memoryType: 'erasable'
+    })
+  ).toEqual(0o12345)
+})
+
+test('Test write to erasable bank 0', () => {
+  memory.write({
+    kind: 'banked',
+    bankId: 0,
+    offset: 0o234,
+    memoryType: 'erasable'
+  }, 0o23432)
+  expect(memory.erasable.getBank(0)[0o234]).toEqual(0o23432)
+})
+
+test('Test write to erasable bank 1', () => {
+  memory.write({
+    kind: 'banked',
+    bankId: 1,
+    offset: 0o345,
+    memoryType: 'erasable'
+  }, 0o6543)
+  expect(memory.erasable.getBank(1)[0o345]).toEqual(0o6543)
+})
+
+test('Test write to erasable bank 7', () => {
+  memory.write({
+    kind: 'banked',
+    bankId: 7,
+    offset: 0o111,
+    memoryType: 'erasable'
+  }, 0o22222)
+  expect(memory.erasable.getBank(7)[0o111]).toEqual(0o22222)
+})
+
+test('Write to banked erasable, read from unswitched (Bank 0)', () => {
+  // Bank 0 lines up with unswitched addresses [0o000, 0o400).
+  memory.write({
+    kind: 'banked',
+    memoryType: 'erasable',
+    bankId: 0,
+    offset: 0o100
+  }, 0o11111)
+
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o100
+  })).toEqual(0o11111)
+})
+
+test('Write to banked erasable, read from unswitched (Bank 1)', () => {
+  // Bank 1 lines up with unswitched addresses [0o0400, 0o1000).
+  memory.write({
+    kind: 'banked',
+    memoryType: 'erasable',
+    bankId: 1,
+    offset: 0o200
+  }, 0o22222)
+
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o600
+  })).toEqual(0o22222)
+})
+
+test('Write to banked erasable, read from unswitched (Bank 2)', () => {
+  // Bank 2 lines up with unswitched addresses [0o1000, 0o1400).
+  memory.write({
+    kind: 'banked',
+    memoryType: 'erasable',
+    bankId: 2,
+    offset: 0o100
+  }, 0o33333)
+
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o1100
+  })).toEqual(0o33333)
+})
+
+test('Write to switched erasable, read from bank 0', () => {
+  // Bank 0 lines up with unswitched addresses [0o000, 0o400).
+  memory.write({
+    kind: 'direct',    
+    address: 0o100
+  }, 0o11111)
+
+  expect(memory.read({
+    kind: 'banked',
+    memoryType: 'erasable',
+    bankId: 0,
+    offset: 0o100
+  })).toEqual(0o11111)
+})
+
+test('Write to switched erasable, read from bank 1', () => {
+  // Bank 1 lines up with unswitched addresses [0o0400, 0o1000).
+  memory.write({
+    kind: 'direct',    
+    address: 0o600
+  }, 0o22222)
+
+  expect(memory.read({
+    kind: 'banked',
+    memoryType: 'erasable',
+    bankId: 1,
+    offset: 0o200
+  })).toEqual(0o22222)
+})
+
+test('Write to switched erasable, read from bank 2', () => {
+  // Bank 2 lines up with unswitched addresses [0o1000, 0o1400).
+  memory.write({
+    kind: 'direct',    
+    address: 0o1100
+  }, 0o33333)
+
+  expect(memory.read({
+    kind: 'banked',
+    memoryType: 'erasable',
+    bankId: 2,
+    offset: 0o100
+  })).toEqual(0o33333)
+})
+
+test('Write to A register via memory', () => {
+  memory.write({
+    kind: 'direct',
+    address: 0o0
+  }, 0o33)
+  expect(memory.registers.A).toEqual(0o33)
+})
+
+test('Read from A register via memory', () => {
+  memory.registers.A = 0o44
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o0
+  })).toEqual(0o44)  
+})
+
+test('Registers cannot be read from via switched memory', () => {
+  memory.registers.A = 0x33
+  expect(memory.read({
+    kind: 'banked',
+    bankId: 0,
+    offset: 0,
+    memoryType: 'erasable'
+  })).toEqual(0)
+})
+
+test('Registers cannot be written to via switched memory', () => {
+  memory.write({
+    kind: 'banked',    
+    bankId: 0,
+    offset: 0,
+    memoryType: 'erasable'
+  }, 0x1234)
+  expect(memory.registers.A).toEqual(0)
+})
+
+test('Write to L register via memory', () => {
+  memory.write({
+    kind: 'direct',
+    address: 0o1
+  }, 0o33)
+  expect(memory.registers.L).toEqual(0o33)
+})
+
+test('Read from L register via memory', () => {
+  memory.registers.L = 0o44
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o1
+  })).toEqual(0o44)  
+})
+
+test('Write to Q register via memory', () => {
+  memory.write({
+    kind: 'direct',
+    address: 0o2
+  }, 0o33)
+  expect(memory.registers.Q).toEqual(0o33)
+})
+
+test('Read from Q register via memory', () => {
+  memory.registers.Q = 0o44
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o2
+  })).toEqual(0o44)  
+})
+
+test('Write to EBANK register via memory', () => {
+  memory.write({
+    kind: 'direct',
+    address: 0o3
+  }, 0o2000)
+  expect(memory.registers.EBANK).toEqual(0o2000)
+})
+
+test('Read from EBANK register via memory', () => {
+  memory.registers.EBANK = 0o1400
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o3
+  })).toEqual(0o1400)  
+})
+
+test('Write to FBANK register via memory', () => {
+  memory.write({
+    kind: 'direct',
+    address: 0o4
+  }, 0o36000)
+  expect(memory.registers.FBANK).toEqual(0o36000)
+})
+
+test('Read from FBANK register via memory', () => {
+  memory.registers.FBANK = 0o70000
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o4
+  })).toEqual(0o70000)  
+})
+
+test('Write to Z register via memory', () => {
+  memory.write({
+    kind: 'direct',
+    address: 0o5
+  }, 0o33)
+  expect(memory.registers.Z).toEqual(0o33)
+})
+
+test('Read from Z register via memory', () => {
+  memory.registers.Z = 0o44
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o5
+  })).toEqual(0o44)  
+})
+
+test('Write to BBANK register via memory', () => {
+  memory.write({
+    kind: 'direct',
+    address: 0o6
+  }, 0o36007)
+  expect(memory.registers.BBANK).toEqual(0o36007)
+})
+
+test('Read from BBANK register via memory', () => {
+  memory.registers.BBANK = 0o70001
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o6
+  })).toEqual(0o70001)  
+})
+
+test('Writes to the zero register are dropped', () => {
+  memory.write({
+    kind: 'direct',
+    address: 0o7
+  }, 0o12345)
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o7
+  })).toEqual(0)
+})
+
+test('Write to ARUPT register via memory', () => {
+  memory.write({
+    kind: 'direct',
+    address: 0o10
+  }, 0o33)
+  expect(memory.registers.ARUPT).toEqual(0o33)
+})
+
+test('Read from ARUPT register via memory', () => {
+  memory.registers.ARUPT = 0o44
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o10
+  })).toEqual(0o44)  
+})
+
+test('Write to LRUPT register via memory', () => {
+  memory.write({
+    kind: 'direct',
+    address: 0o11
+  }, 0o33)
+  expect(memory.registers.LRUPT).toEqual(0o33)
+})
+
+test('Read from LRUPT register via memory', () => {
+  memory.registers.LRUPT = 0o44
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o11
+  })).toEqual(0o44)  
+})
+
+test('Write to QRUPT register via memory', () => {
+  memory.write({
+    kind: 'direct',
+    address: 0o12
+  }, 0o33)
+  expect(memory.registers.QRUPT).toEqual(0o33)
+})
+
+test('Read from QRUPT register via memory', () => {
+  memory.registers.QRUPT = 0o44
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o12
+  })).toEqual(0o44)  
+})
+
+test('Write to SAMPTIME_1 register via memory', () => {
+  memory.write({
+    kind: 'direct',
+    address: 0o13
+  }, 0o33)
+  expect(memory.registers.SAMPTIME_1).toEqual(0o33)
+})
+
+test('Read from SAMPTIME_1 register via memory', () => {
+  memory.registers.SAMPTIME_1 = 0o44
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o13
+  })).toEqual(0o44)  
+})
+
+test('Write to SAMPTIME_2 register via memory', () => {
+  memory.write({
+    kind: 'direct',
+    address: 0o14
+  }, 0o33)
+  expect(memory.registers.SAMPTIME_2).toEqual(0o33)
+})
+
+test('Read from SAMPTIME_2 register via memory', () => {
+  memory.registers.SAMPTIME_2 = 0o44
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o14
+  })).toEqual(0o44)  
+})
+
+test('Write to ZRUPT register via memory', () => {
+  memory.write({
+    kind: 'direct',
+    address: 0o15
+  }, 0o33)
+  expect(memory.registers.ZRUPT).toEqual(0o33)
+})
+
+test('Read from ZRUPT register via memory', () => {
+  memory.registers.ZRUPT = 0o44
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o15
+  })).toEqual(0o44)  
+})
+
+test('Write to BBRUPT register via memory', () => {
+  memory.write({
+    kind: 'direct',
+    address: 0o16
+  }, 0o33)
+  expect(memory.registers.BBRUPT).toEqual(0o33)
+})
+
+test('Read from BBRUPT register via memory', () => {
+  memory.registers.BBRUPT = 0o44
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o16
+  })).toEqual(0o44)  
+})
+
+test('Write to BRUPT register via memory', () => {
+  memory.write({
+    kind: 'direct',
+    address: 0o17
+  }, 0o33)
+  expect(memory.registers.BRUPT).toEqual(0o33)
+})
+
+test('Read from BRUPT register via memory', () => {
+  memory.registers.BRUPT = 0o44
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o17
+  })).toEqual(0o44)  
+})
+
+test('Write to CYR register via memory', () => {
+  memory.write({
+    kind: 'direct',
+    address: 0o20
+  }, 0o33)
+  expect(memory.registers.CYR).toEqual(cycleRight(0o33))
+})
+
+test('Read from CYR register via memory', () => {
+  memory.registers.CYR = 0o44
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o20
+  })).toEqual(cycleRight(0o44))
+})
+
+test('Write to SR register via memory', () => {
+  memory.write({
+    kind: 'direct',
+    address: 0o21
+  }, 0o33)
+  expect(memory.registers.SR).toEqual(shiftRight(0o33))
+})
+
+test('Read from SR register via memory', () => {
+  memory.registers.SR = 0o44
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o21
+  })).toEqual(shiftRight(0o44))
+})
+
+test('Write to CYL register via memory', () => {
+  memory.write({
+    kind: 'direct',
+    address: 0o22
+  }, 0o33)
+  expect(memory.registers.CYL).toEqual(cycleLeft(0o33))
+})
+
+test('Read from CYL register via memory', () => {
+  memory.registers.CYL = 0o44
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o22
+  })).toEqual(cycleLeft(0o44))
+})
+
+test('Write to EDOP register via memory', () => {
+  memory.write({
+    kind: 'direct',
+    address: 0o23
+  }, 0o33333)
+  expect(memory.registers.EDOP).toEqual(edop(0o33333))
+})
+
+test('Read from EDOP register via memory', () => {
+  memory.registers.EDOP = 0o44444
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o23
+  })).toEqual(edop(0o44444))
 })
