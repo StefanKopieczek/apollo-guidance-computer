@@ -1,4 +1,4 @@
-import { assertShape, assertWidth } from '../../bitutils/bitAsserts'
+import { assertWidth } from '../../bitutils/bitAsserts'
 import { cycleLeft, cycleRight, edop, shiftRight } from '../../bitutils/math'
 
 export class Registers {
@@ -56,8 +56,8 @@ export class Registers {
   }
 
   set EBANK (value: number) {
-    assertShape(value, 0b000_011_100_000_000)
-    this._ebank = value
+    assertWidth(value, 15)
+    this._ebank = value & 0o3400
   }
 
   get FBANK (): number {
@@ -65,8 +65,8 @@ export class Registers {
   }
 
   set FBANK (value: number) {
-    assertWidth(value, 5)
-    this._fbank = value
+    assertWidth(value, 15)
+    this._fbank = value & 0o76000
   }
 
   get Z (): number {
@@ -74,18 +74,18 @@ export class Registers {
   }
 
   set Z (value: number) {
-    assertWidth(value, 12)
-    this._z = value
+    assertWidth(value, 15)
+    this._z = value & 0o7777 // Z only addresses a 12 bit field
   }
 
   get BBANK (): number {
-    return (this._fbank << 10) | (this._ebank >>> 8)
+    return this._fbank | (this._ebank >>> 8)
   }
 
   set BBANK (value: number) {
-    assertShape(value, 0b111_110_000_000_111)
-    this.FBANK = value >>> 10
-    this.EBANK = (value & 0b111) << 8
+    assertWidth(value, 15)
+    this.FBANK = value & 0o76000
+    this.EBANK = (value & 0o7) << 8
   }
 
   get ARUPT (): number {
