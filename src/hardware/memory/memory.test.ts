@@ -441,16 +441,49 @@ test('Write to A register via memory', () => {
   memory.write({
     kind: 'direct',
     address: 0o0
+  }, 0o177777)
+  expect(memory.registers.A).toEqual(0o177777)
+})
+
+test('Read from A register via memory', () => {
+  memory.registers.A = 0o33
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o0
+  })).toEqual(0o33)  
+})
+
+test('Writing a negative number to register A sets overflow bit', () => {
+  memory.write({
+    kind: 'direct',
+    address: 0o0
+  }, 0o77777)
+  expect(memory.registers.A).toEqual(0o177777)
+})
+
+test('Writing a positive number to A resets overflow bit', () => {
+  memory.registers.A = 0o100000
+  memory.write({
+    kind: 'direct',
+    address: 0o0
   }, 0o33)
   expect(memory.registers.A).toEqual(0o33)
 })
 
-test('Read from A register via memory', () => {
-  memory.registers.A = 0o44
+test('Reads from A are overflow corrected (#1)', () => {
+  memory.registers.A = 0o100033
   expect(memory.read({
     kind: 'direct',
     address: 0o0
-  })).toEqual(0o44)  
+  })).toEqual(0o40033)
+})
+
+test('Reads from A are overflow corrected (#2)', () => {
+  memory.registers.A = 0o077777
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o0
+  })).toEqual(0o037777)
 })
 
 test('Registers cannot be read from via switched memory', () => {
@@ -503,6 +536,39 @@ test('Read from Q register via memory', () => {
     kind: 'direct',
     address: 0o2
   })).toEqual(0o44)  
+})
+
+test('Writing a negative number to register Q sets overflow bit', () => {
+  memory.write({
+    kind: 'direct',
+    address: 0o2
+  }, 0o77777)
+  expect(memory.registers.Q).toEqual(0o177777)
+})
+
+test('Writing a positive number to Q resets overflow bit', () => {
+  memory.registers.Q = 0o100000
+  memory.write({
+    kind: 'direct',
+    address: 0o2
+  }, 0o33)
+  expect(memory.registers.Q).toEqual(0o33)
+})
+
+test('Reads from Q are overflow corrected (#1)', () => {
+  memory.registers.Q = 0o100033
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o2
+  })).toEqual(0o40033)
+})
+
+test('Reads from Q are overflow corrected (#2)', () => {
+  memory.registers.Q = 0o077777
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o2
+  })).toEqual(0o037777)
 })
 
 test('Write to EBANK register via memory', () => {

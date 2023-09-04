@@ -36,9 +36,7 @@ export class Memory {
     return bankArray.getBank(canonicalRef.bankId)[canonicalRef.offset]
   }
 
-  write (ref: MemoryRef, value: number): void {
-    assertWidth(value, 15)
-
+  write (ref: MemoryRef, value: number): void {    
     let canonicalRef: BankedRef
 
     // If the reference is direct, then it either refers to a memory-mapped register,
@@ -63,6 +61,7 @@ export class Memory {
       return
     }
 
+    assertWidth(value, 15)
     const bankArray = (canonicalRef.memoryType === 'erasable') ? this.erasable : this.fixed
     bankArray.getBank(canonicalRef.bankId)[canonicalRef.offset] = value
   }
@@ -156,14 +155,12 @@ export class Memory {
     }
 
     switch (address) {
-      case 0o0:
-        // The 16th bit of the accumulator is inaccessible on read.
-        return this.registers.A & (0o77777)
+      case 0o0:        
+        return this.correctOverflow(this.registers.A)
       case 0o1:
         return this.registers.L
-      case 0o2:
-        // The 16th bit of the Q register is inaccessible on read.
-        return this.registers.Q & (0o77777)
+      case 0o2:        
+        return this.correctOverflow(this.registers.Q)
       case 0o3:
         return this.registers.EBANK
       case 0o4:
@@ -205,22 +202,20 @@ export class Memory {
     }
   }
 
-  private setRegister (address: number, value: number): void {
-    assertWidth(value, 15)
-
+  private setRegister (address: number, value: number): void {    
     if (!this.isRegister(address)) {
       throw new AddressOutOfBoundsError(`${address.toString(8)} is not a valid register address in the ${this.environment} environment`)
     }
 
     switch (address) {
       case 0o0:
-        this.registers.A = value
+        this.registers.A = this.primeOverflowBit(value)
         break
       case 0o1:
         this.registers.L = value
         break
       case 0o2:
-        this.registers.Q = value
+        this.registers.Q = this.primeOverflowBit(value)
         break
       case 0o3:
         this.registers.EBANK = value
@@ -276,6 +271,20 @@ export class Memory {
         // TODO
         throw new Error(`Register access ${address.toString(8)} not implemented`)
     }
+  }
+
+  private primeOverflowBit(original: number): number {
+    // Set the 16th bit equal to the value of the 15th bit.
+    // This is used by overflow-aware registers, as if overflow onto the 16th bit occurs
+    // it will then differ from the 15th bit.
+    // Thus we initially set them equal, such that if they ever differ we will know overflow occurred.
+    return (original & 0o77777) | ((original << 1) & 0o100000)
+  }
+
+  private correctOverflow(value: number): number {
+    // Overflow correction consists of replacing the 15th bit of the number with the 16th.
+    // We then set the 16th to 0, since we do not use parity bits in this implementation.
+    return (value & 0o37777) | ((value & 0o100000) >>> 1)
   }
 }
 
