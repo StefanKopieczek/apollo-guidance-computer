@@ -7,7 +7,7 @@ export class Memory {
   environment: Environment
   registers = new Registers()
   erasable = new MemoryBank(8, 0o400)
-  fixed = new MemoryBank(44, 0o2000)
+  fixed = new MemoryBank(36, 0o2000)
   isSuperbankSet = false
 
   constructor (environment: Environment) {
@@ -57,7 +57,11 @@ export class Memory {
       return
     }
 
-    // TODO prevent writes to fixed storage
+    if (canonicalRef.memoryType === 'fixed') {
+      // Writes to fixed memory should silently fail.
+      // TODO: confirm whether this should in fact force a reset.
+      return
+    }
 
     const bankArray = (canonicalRef.memoryType === 'erasable') ? this.erasable : this.fixed
     bankArray.getBank(canonicalRef.bankId)[canonicalRef.offset] = value
@@ -124,14 +128,14 @@ export class Memory {
         bankId: Math.trunc(ref.address / this.erasable.bankSize),
         offset: ref.address % this.erasable.bankSize
       }
-    } else if ((ref.address > 0o4000) && (ref.address < 0o10000)) {
+    } else if ((ref.address >= 0o4000) && (ref.address < 0o10000)) {
       // F2 and F3 are permanently mapped to 0o4000-0o5777 and 0o6000-0o7777 respectively.
       const bankId = ref.address < 0o6000 ? 2 : 3
       return {
         kind: 'banked',
         memoryType: 'fixed',
         bankId,
-        offset: ref.address - 0o4000 - (bankId === 2 ? 0 : 1)
+        offset: ref.address - 0o4000 - (bankId === 2 ? 0 : 0o2000)
       }
     } else {
       throw new AddressOutOfBoundsError(`Invalid direct reference address ${ref.address.toString(8)}`)

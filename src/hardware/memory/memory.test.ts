@@ -269,7 +269,7 @@ test('Direct out of bounds fixed read throws exception (#1)', () => {
   expect(() => {
     memory.read({
       kind: 'direct',
-      address: 0o4000
+      address: 0o2000
     })
   }).toThrow(AddressOutOfBoundsError)
 })
@@ -770,4 +770,60 @@ test('Read from EDOP register via memory', () => {
     kind: 'direct',
     address: 0o23
   })).toEqual(edop(0o44444))
+})
+
+test('Read from fixed unswitched memory (#1)', () => {
+  // Banks 2 and 3 of fixed memory are accessible without switching.
+  // Bank 2 is at [0o4000, 0o6000).
+  memory.fixed.getBank(2)[0] = 0o777
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o4000
+  })).toEqual(0o777)
+})
+
+test('Read from fixed unswitched memory (#2)', () => {
+  // Banks 2 and 3 of fixed memory are accessible without switching.
+  // Bank 3 is at [0o6000, 0o8000).
+  memory.fixed.getBank(3)[0o123] = 0o65432
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o6123
+  })).toEqual(0o65432)
+})
+
+test('Cannot write to fixed unswitched memory', () => {
+  memory.write({
+    kind: 'direct',
+    address: 0o4567
+  }, 0o1234)  
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o4567
+  })).toEqual(0)
+})
+
+test('Read from banked fixed memory (#1)', () => {
+  memory.fixed.getBank(27)[0o1234] = 0o54321
+  expect(memory.read({
+    kind: 'banked',
+    bankId: 27,
+    offset: 0o1234,
+    memoryType: 'fixed'
+  })).toEqual(0o54321)
+})
+
+test('Read from banked fixed memory (#2)', () => {
+  memory.fixed.getBank(35)[0o1234] = 0o54321
+  expect(memory.read({
+    kind: 'banked',
+    bankId: 35,
+    offset: 0o1234,
+    memoryType: 'fixed'
+  })).toEqual(0o54321)
+})
+
+test('Read from deadbank is always 0', () => {
+  memory.write({kind: 'deadbank'}, 0o1234)
+  expect(memory.read({kind: 'deadbank'})).toEqual(0)
 })
