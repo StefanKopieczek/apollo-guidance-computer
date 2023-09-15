@@ -30,14 +30,14 @@ test('Test AD [(+0) + (-1) = (-1)]', () => {
   memory.registers.A = 0
   memory.write(addr0o100, 0o77776)
   ad(memory, addr0o100)
-  expect(memory.registers.A).toEqual(0o77776)
+  expect(memory.registers.A).toEqual(0o177776)
 })
 
 test('Test AD [(+1) + (-1) = (-0)]', () => {
   memory.registers.A = 1
   memory.write(addr0o100, 0o77776)
   ad(memory, addr0o100)
-  expect(memory.registers.A).toEqual(0o77777)
+  expect(memory.registers.A).toEqual(0o177777)
 })
 
 test('Test AD [(+0o02000) + (+0o06000) = (+0o10000)', () => {
@@ -70,6 +70,14 @@ test('Test AD [(-0o37777) + (-0o30000) = (+0o10000)', () => {
   memory.write(addr0o100, 0o47777)
   ad(memory, addr0o100)
   expect(memory.registers.A).toEqual(0o110000)
+})
+
+test('Test AD [(-1) + (+2) = (+1)]', () => {
+    // No overflow occurs here.
+    memory.registers.A = 0o177776
+    memory.write(addr0o100, 0o2)
+    ad(memory, addr0o100)
+    expect(memory.registers.A).toEqual(0o1)
 })
 
 test('Test COM 0o123456 = 0o054321', () => {

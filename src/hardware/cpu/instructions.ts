@@ -1,3 +1,4 @@
+import { signExtend } from '../../bitutils/onesComplement'
 import { type Memory, type MemoryRef } from '../memory/memory'
 
 export function ad (memory: Memory, operandAddress: MemoryRef): void {
@@ -5,11 +6,11 @@ export function ad (memory: Memory, operandAddress: MemoryRef): void {
 }
 
 function addToAcc (memory: Memory, value: number): void {
-  const left = memory.registers.A & 0o77777
-  const right = value
+  const left = memory.registers.A 
+  const right = signExtend(value)
   const interim = left + right
-  const result = (interim & 0o77777) + (interim >>> 15)
-  memory.registers.A = (memory.registers.A & 0o100000) | result
+  const result = (interim + (interim >>> 16)) & 0o177777
+  memory.registers.A = result
 }
 
 export function com (memory: Memory): void {
