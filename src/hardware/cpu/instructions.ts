@@ -15,7 +15,3 @@ function addToAcc (memory: Memory, value: number): void {
 export function com (memory: Memory): void {
   memory.registers.A = (0o177777) & (~memory.registers.A)
 }
-
-export function double (memory: Memory): void {
-  addToAcc(memory, memory.registers.A & 0o77777)
-}
