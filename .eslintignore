@@ -1,0 +1,5 @@
+.gitignore
+.eslintrc.js
+jest.config.*
+dist/
+*.sw[po]
