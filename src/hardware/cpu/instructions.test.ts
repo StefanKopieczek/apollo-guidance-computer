@@ -97,7 +97,7 @@ test('Test DOUBLE 0o1000', () => {
 })
 
 test('Test DOUBLE -0o2000 = -0o4000', () => {
-  memory.registers.A = 0o145777
+  memory.registers.A = 0o175777
   double(memory)
-  expect(memory.registers.A).toEqual(0o143777)
+  expect(memory.registers.A).toEqual(0o173777)
 })
