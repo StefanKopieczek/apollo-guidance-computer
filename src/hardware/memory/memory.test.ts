@@ -486,6 +486,14 @@ test('Reads from A are overflow corrected (#2)', () => {
   })).toEqual(0o037777)
 })
 
+test('Can disable overflow correction for reads', () => {
+  memory.registers.A = 0o077777
+  expect(memory.read({
+    kind: 'direct',
+    address: 0o0
+  }, false)).toEqual(0o77777)
+})
+
 test('Registers cannot be read from via switched memory', () => {
   memory.registers.A = 0x33
   expect(memory.read({

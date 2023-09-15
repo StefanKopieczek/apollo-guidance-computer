@@ -15,14 +15,20 @@ export class Memory {
     this.environment = environment
   }
 
-  read (ref: MemoryRef): number {
+  read (ref: MemoryRef, shouldCorrectOverflow?: boolean): number {
+    if (shouldCorrectOverflow === undefined) {
+      // If reading from a sixteen bit register, we usually want to
+      // correct any overflow that occurred by moving bit 16 to 15.
+      shouldCorrectOverflow = true
+    }
+
     let canonicalRef: BankedRef
 
     // If the reference is direct, then it either refers to a memory-mapped register,
     // or to a fixed area of memory.
     if (ref.kind === 'direct') {
       if (this.isRegister(ref.address)) {
-        return this.readRegister(ref.address)
+        return this.readRegister(ref.address, shouldCorrectOverflow)
       } else {
         canonicalRef = this.convertToBanked(ref)
       }
@@ -37,14 +43,20 @@ export class Memory {
     return bankArray.getBank(canonicalRef.bankId)[canonicalRef.offset]
   }
 
-  write (ref: MemoryRef, value: number): void {
+  write (ref: MemoryRef, value: number, shouldExtendSign?: boolean): void {
+    if (shouldExtendSign === undefined) {
+      // If writing to a sixteen bit register, we usually want to set bit 16
+      // in order to allow for future overflow detection.
+      shouldExtendSign = true
+    }
+
     let canonicalRef: BankedRef
 
     // If the reference is direct, then it either refers to a memory-mapped register,
     // or to a fixed area of memory.
     if (ref.kind === 'direct') {
       if (this.isRegister(ref.address)) {
-        this.setRegister(ref.address, value)
+        this.setRegister(ref.address, value, shouldExtendSign)
         return
       } else {
         canonicalRef = this.convertToBanked(ref)
@@ -150,18 +162,26 @@ export class Memory {
         (address === 0o55 || address === 0o56 || address === 60)))
   }
 
-  private readRegister (address: number): number {
+  private readRegister (address: number, shouldCorrectOverflow: boolean): number {
     if (!this.isRegister(address)) {
       throw new AddressOutOfBoundsError(`${address.toString(8)} is not a valid register address in the ${this.environment} environment`)
     }
 
     switch (address) {
       case 0o0:
-        return this.correctOverflow(this.registers.A)
+        if (shouldCorrectOverflow) {
+          return this.correctOverflow(this.registers.A)
+        } else {
+          return this.registers.A
+        }
       case 0o1:
         return this.registers.L
       case 0o2:
-        return this.correctOverflow(this.registers.Q)
+        if (shouldCorrectOverflow) {
+          return this.correctOverflow(this.registers.Q)
+        } else {
+          return this.registers.Q
+        }
       case 0o3:
         return this.registers.EBANK
       case 0o4:
@@ -203,19 +223,25 @@ export class Memory {
     }
   }
 
-  private setRegister (address: number, value: number): void {
+  private setRegister (address: number, value: number, shouldExtendSign: boolean): void {
     if (!this.isRegister(address)) {
       throw new AddressOutOfBoundsError(`${address.toString(8)} is not a valid register address in the ${this.environment} environment`)
     }
 
     switch (address) {
       case 0o0:
-        this.registers.A = signExtend(value)
+        if (shouldExtendSign) {
+          value = signExtend(value)
+        }
+        this.registers.A = value
         break
       case 0o1:
         this.registers.L = value
         break
       case 0o2:
+        if (shouldExtendSign) {
+          value = signExtend(value)
+        }
         this.registers.Q = signExtend(value)
         break
       case 0o3:
@@ -326,6 +352,15 @@ export interface DeadBank {
    * Writes should be dropped; reads should return all 0s.
    */
   readonly kind: 'deadbank'
+}
+
+export function isSixteenBit (ref: MemoryRef): boolean {
+  switch (ref.kind) {
+    case 'direct':
+      return ref.address === 0 || ref.address === 2
+    default:
+      return false
+  }
 }
 
 export class AddressOutOfBoundsError extends Error {}
