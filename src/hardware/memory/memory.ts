@@ -37,7 +37,7 @@ export class Memory {
     return bankArray.getBank(canonicalRef.bankId)[canonicalRef.offset]
   }
 
-  write (ref: MemoryRef, value: number): void {    
+  write (ref: MemoryRef, value: number): void {
     let canonicalRef: BankedRef
 
     // If the reference is direct, then it either refers to a memory-mapped register,
@@ -156,11 +156,11 @@ export class Memory {
     }
 
     switch (address) {
-      case 0o0:        
+      case 0o0:
         return this.correctOverflow(this.registers.A)
       case 0o1:
         return this.registers.L
-      case 0o2:        
+      case 0o2:
         return this.correctOverflow(this.registers.Q)
       case 0o3:
         return this.registers.EBANK
@@ -203,7 +203,7 @@ export class Memory {
     }
   }
 
-  private setRegister (address: number, value: number): void {    
+  private setRegister (address: number, value: number): void {
     if (!this.isRegister(address)) {
       throw new AddressOutOfBoundsError(`${address.toString(8)} is not a valid register address in the ${this.environment} environment`)
     }
@@ -274,7 +274,7 @@ export class Memory {
     }
   }
 
-  private correctOverflow(value: number): number {
+  private correctOverflow (value: number): number {
     // Overflow correction consists of replacing the 15th bit of the number with the 16th.
     // We then set the 16th to 0, since we do not use parity bits in this implementation.
     return (value & 0o37777) | ((value & 0o100000) >>> 1)
