@@ -1,4 +1,5 @@
 import { assertWidth } from '../../bitutils/bitAsserts'
+import { signExtend } from '../../bitutils/onesComplement'
 import { Environment } from '../../environment'
 import { MemoryBank } from './memoryBank'
 import { Registers } from './registers'
@@ -209,13 +210,13 @@ export class Memory {
 
     switch (address) {
       case 0o0:
-        this.registers.A = this.primeOverflowBit(value)
+        this.registers.A = signExtend(value)
         break
       case 0o1:
         this.registers.L = value
         break
       case 0o2:
-        this.registers.Q = this.primeOverflowBit(value)
+        this.registers.Q = signExtend(value)
         break
       case 0o3:
         this.registers.EBANK = value
@@ -271,14 +272,6 @@ export class Memory {
         // TODO
         throw new Error(`Register access ${address.toString(8)} not implemented`)
     }
-  }
-
-  private primeOverflowBit(original: number): number {
-    // Set the 16th bit equal to the value of the 15th bit.
-    // This is used by overflow-aware registers, as if overflow onto the 16th bit occurs
-    // it will then differ from the 15th bit.
-    // Thus we initially set them equal, such that if they ever differ we will know overflow occurred.
-    return (original & 0o77777) | ((original << 1) & 0o100000)
   }
 
   private correctOverflow(value: number): number {

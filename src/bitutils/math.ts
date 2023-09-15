@@ -19,3 +19,4 @@ export function shiftRight (n: number): number {
   assertWidth(n, 15)
   return n >>> 1
 }
+
