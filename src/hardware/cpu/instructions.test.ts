@@ -1,6 +1,6 @@
 import { Environment } from '../../environment'
 import { Memory, type MemoryRef } from '../memory/memory'
-import { ad, com } from './instructions'
+import { ad, com, double } from './instructions'
 
 let memory: Memory
 
@@ -88,4 +88,16 @@ test('Test COM 0o177777 = 0o000000', () => {
   memory.registers.A = 0o177777
   com(memory)
   expect(memory.registers.A).toEqual(0)
+})
+
+test('Test DOUBLE 0o1000', () => {
+  memory.registers.A = 0o01000
+  double(memory)
+  expect(memory.registers.A).toEqual(0o2000)
+})
+
+test('Test DOUBLE -0o2000 = -0o4000', () => {
+  memory.registers.A = 0o145777
+  double(memory)
+  expect(memory.registers.A).toEqual(0o143777)
 })
