@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "tsc": "tsc",
-    "test": "npx jest && eslint --ignore-path .gitignore -ext .js,.ts .",
+    "test": "npx jest && eslint --ignore-path .gitignore --ext .js,.ts .",
     "lint": "eslint --fix --ignore-path .gitignore --ext .js,.ts ."
   },
   "author": "Stefan Kopieczek",
