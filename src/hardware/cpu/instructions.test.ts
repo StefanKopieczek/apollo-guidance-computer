@@ -10,6 +10,11 @@ const addr0: MemoryRef = {
   address: 0
 }
 
+const addr3: MemoryRef = {
+  kind: 'direct',
+  address: 3
+}
+
 const addr0o100: MemoryRef = {
   kind: 'direct',
   address: 0o100
@@ -98,6 +103,13 @@ test('Test DOUBLE during negative overflow condition', () => {
   memory.registers.A = 0o100002
   ad(memory, addr0)
   expect(memory.registers.A).toEqual(0o000005)
+})
+
+test('Test AD Q preserves Q bit 16', () => {
+  // The overflow bit of Q also gets included in AD.
+  memory.registers.Q = 0o100000
+  ad(memory, addr3)
+  expect(memory.registers.Q).toEqual(0o100000)
 })
 
 test('Test COM 0o123456 = 0o054321', () => {
