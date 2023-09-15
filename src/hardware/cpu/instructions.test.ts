@@ -4,15 +4,22 @@ import { ad, com, incr } from './instructions'
 
 let memory: Memory
 
-// NB that this is the address of register A.
+// The address of register A.
 const addr0: MemoryRef = {
   kind: 'direct',
   address: 0
 }
 
-const addr3: MemoryRef = {
+// The address of register L.
+const addr1: MemoryRef = {
   kind: 'direct',
-  address: 3
+  address: 1
+}
+
+// The address of register Q.
+const addr2: MemoryRef = {
+  kind: 'direct',
+  address: 2
 }
 
 const addr0o100: MemoryRef = {
@@ -108,7 +115,7 @@ test('Test DOUBLE during negative overflow condition', () => {
 test('Test AD Q preserves Q bit 16', () => {
   // The overflow bit of Q also gets included in AD.
   memory.registers.Q = 0o100000
-  ad(memory, addr3)
+  ad(memory, addr2)
   expect(memory.registers.Q).toEqual(0o100000)
 })
 
@@ -178,4 +185,34 @@ test('Test INCR A (when A is in an overflow state)', () => {
   memory.registers.A = 0o40000
   incr(memory, addr0)
   expect(memory.registers.A).toEqual(0o40001)
+})
+
+test('Test INCR Q', () => {
+  memory.registers.Q = 0o140000
+  incr(memory, addr2)
+  expect(memory.registers.Q).toEqual(0o140001)
+})
+
+test('Test INCR L', () => {
+  memory.registers.L = 0o47776
+  incr(memory, addr1)
+  expect(memory.registers.L).toEqual(0o47777)
+})
+
+test('Test INCR L to overflow', () => {
+  memory.registers.L = 0o37777
+  incr(memory, addr1)
+  expect(memory.registers.L).toEqual(0o40000)
+})
+
+test('Test INCR 0o100', () => {
+  memory.write(addr0o100, 0o12345)
+  incr(memory, addr0o100)
+  expect(memory.read(addr0o100)).toEqual(0o12346)
+})
+
+test('Test INCR 0o37777', () => {
+  memory.write(addr0o100, 0o37777)
+  incr(memory, addr0o100)
+  expect(memory.read(addr0o100)).toEqual(0o40000)
 })

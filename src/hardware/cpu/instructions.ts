@@ -16,6 +16,7 @@ export function com (memory: Memory): void {
 }
 
 export function incr (memory: Memory, operandAddress: MemoryRef): void {
-  // TODO assert erasable
-  memory.registers.A = (memory.registers.A & 0o100000) | ((memory.registers.A & 0o77777) + 1)
+  const operand = memory.read(operandAddress, false)
+  const result = (operand & 0o100000) | ((operand & 0o77777) + 1)
+  memory.write(operandAddress, result, false)
 }

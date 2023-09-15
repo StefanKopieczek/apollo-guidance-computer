@@ -17,6 +17,8 @@ export class Memory {
 
   read (ref: MemoryRef, shouldCorrectOverflow?: boolean): number {
     if (shouldCorrectOverflow === undefined) {
+      // If reading from a sixteen bit register, we usually want to
+      // correct any overflow that occurred by moving bit 16 to 15.
       shouldCorrectOverflow = true
     }
 
@@ -41,14 +43,20 @@ export class Memory {
     return bankArray.getBank(canonicalRef.bankId)[canonicalRef.offset]
   }
 
-  write (ref: MemoryRef, value: number): void {
+  write (ref: MemoryRef, value: number, shouldExtendSign?: boolean): void {
+    if (shouldExtendSign === undefined) {
+      // If writing to a sixteen bit register, we usually want to set bit 16
+      // in order to allow for future overflow detection.
+      shouldExtendSign = true
+    }
+
     let canonicalRef: BankedRef
 
     // If the reference is direct, then it either refers to a memory-mapped register,
     // or to a fixed area of memory.
     if (ref.kind === 'direct') {
       if (this.isRegister(ref.address)) {
-        this.setRegister(ref.address, value)
+        this.setRegister(ref.address, value, shouldExtendSign)
         return
       } else {
         canonicalRef = this.convertToBanked(ref)
@@ -215,19 +223,25 @@ export class Memory {
     }
   }
 
-  private setRegister (address: number, value: number): void {
+  private setRegister (address: number, value: number, shouldExtendSign: boolean): void {
     if (!this.isRegister(address)) {
       throw new AddressOutOfBoundsError(`${address.toString(8)} is not a valid register address in the ${this.environment} environment`)
     }
 
     switch (address) {
       case 0o0:
-        this.registers.A = signExtend(value)
+        if (shouldExtendSign) {
+          value = signExtend(value)
+        }
+        this.registers.A = value
         break
       case 0o1:
         this.registers.L = value
         break
       case 0o2:
+        if (shouldExtendSign) {
+          value = signExtend(value)
+        }
         this.registers.Q = signExtend(value)
         break
       case 0o3:
