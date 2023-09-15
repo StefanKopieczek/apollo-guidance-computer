@@ -277,6 +277,9 @@ export class Memory {
   private correctOverflow (value: number): number {
     // Overflow correction consists of replacing the 15th bit of the number with the 16th.
     // We then set the 16th to 0, since we do not use parity bits in this implementation.
+    // (Note: the setting of the 16th bit to 0 is on the assumption that we're copying to memory or a 15 bit register.
+    // this therefore isn't suitable to use to overflow correct a 16 bit register prior to a subsequent operation.
+    // Unsure whether we'll need to use it for 16 bit registers; if so we should refactor).
     return (value & 0o37777) | ((value & 0o100000) >>> 1)
   }
 }
