@@ -1,8 +1,14 @@
 import { Environment } from '../../environment'
 import { Memory, type MemoryRef } from '../memory/memory'
-import { ad, com } from './instructions'
+import { ad, com, incr } from './instructions'
 
 let memory: Memory
+
+// NB that this is the address of register A.
+const addr0: MemoryRef = {
+    kind: 'direct',
+    address: 0
+}
 
 const addr0o100: MemoryRef = {
   kind: 'direct',
@@ -88,4 +94,48 @@ test('Test COM 0o177777 = 0o000000', () => {
   memory.registers.A = 0o177777
   com(memory)
   expect(memory.registers.A).toEqual(0)
+})
+
+test('Test INCR A (when A is +0)', () => {
+    memory.registers.A = 0
+    incr(memory, addr0)
+    expect(memory.registers.A).toEqual(1)
+})
+
+test('Test INCR A (when A is +1)', () => {
+    memory.registers.A = 1
+    incr(memory, addr0)
+    expect(memory.registers.A).toEqual(2)
+})
+
+test('Test INCR A (when A is -1)', () => {
+    memory.registers.A = 0o177776
+    incr(memory, addr0)
+    expect(memory.registers.A).toEqual(0o177777)
+})
+
+test('Test INCR A (when A is 0o37777)', () => {
+    // Overflow occurs, with no correction.
+    memory.registers.A = 0o37777
+    incr(memory, addr0)
+    expect(memory.registers.A).toEqual(0o40000)
+})
+
+test('Test INCR A (when A is -0o37777)', () => {
+    memory.registers.A = 0o140000
+    incr(memory, addr0)
+    expect(memory.registers.A).toEqual(0o140001)
+})
+
+test('Test INCR A (when A is -0)', () => {
+    memory.registers.A = 0o177777
+    incr(memory, addr0)
+    expect(memory.registers.A).toEqual(0o100000)
+})
+
+test('Test INCR A (when A is in an overflow state', () => {
+    // No overflow correction occurs.
+    memory.registers.A = 0o40000
+    incr(memory, addr0)
+    expect(memory.registers.A).toEqual(0o40001)
 })

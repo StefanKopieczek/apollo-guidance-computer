@@ -15,3 +15,8 @@ function addToAcc (memory: Memory, value: number): void {
 export function com (memory: Memory): void {
   memory.registers.A = (0o177777) & (~memory.registers.A)
 }
+
+export function incr (memory: Memory, operandAddress: MemoryRef) {
+    // TODO assert erasable
+    memory.registers.A = (memory.registers.A & 0o100000) | ((memory.registers.A & 0o77777) + 1)
+}
