@@ -50,10 +50,18 @@ test('Test AD [(+0o22000) + (+0o26000) = (+0o50000)', () => {
     expect(memory.registers.A).toEqual(0o50000)
 })
 
-test('Test AD [(-0o3777) + (-0o7777) = (-0o1376)', () => {
+test('Test AD [(-0o3777) + (-0o7777) = (-0o13776)', () => {
     // Add large negative numbers, with end-around-carry but no overflow.
-    memory.registers.A = 0o74000
+    memory.registers.A = 0o174000
     memory.write(addr_0o100, 0o70000)
     ad(memory, addr_0o100)
-    expect(memory.registers.A).toEqual(0o72001)
+    expect(memory.registers.A).toEqual(0o164001)
+})
+
+test('Test AD [(-0o37777) + (-0o30000) = (+0o10000)', () => {
+    // Add large negative numbers, with overflow.
+    memory.registers.A = 0o140000
+    memory.write(addr_0o100, 0o47777)
+    ad(memory, addr_0o100)
+    expect(memory.registers.A).toEqual(0o110000)
 })

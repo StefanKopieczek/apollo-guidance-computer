@@ -2,8 +2,9 @@ import { signExtend } from "../../bitutils/onesComplement";
 import { Memory, MemoryRef } from "../memory/memory";
 
 export function ad(memory: Memory, operandAddress: MemoryRef): void {    
-    const acc = memory.registers.A
-    const operand = signExtend(memory.read(operandAddress))
-    const interim = acc + operand    
-    memory.registers.A = (interim & 0o177777) + (interim >>> 16)
+    const left = memory.registers.A & 0o77777
+    const right = memory.read(operandAddress)    
+    const interim = left + right
+    const result = (interim & 0o77777) + (interim >>> 15)
+    memory.registers.A = (memory.registers.A & 0o100000) | result
 }
