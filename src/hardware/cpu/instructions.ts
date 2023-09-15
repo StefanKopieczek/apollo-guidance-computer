@@ -6,7 +6,7 @@ export function ad (memory: Memory, operandAddress: MemoryRef): void {
 }
 
 function addToAcc (memory: Memory, value: number): void {
-  const left = memory.registers.A 
+  const left = memory.registers.A
   const right = signExtend(value)
   const interim = left + right
   const result = (interim + (interim >>> 16)) & 0o177777
@@ -17,7 +17,7 @@ export function com (memory: Memory): void {
   memory.registers.A = (0o177777) & (~memory.registers.A)
 }
 
-export function incr (memory: Memory, operandAddress: MemoryRef) {
-    // TODO assert erasable
-    memory.registers.A = (memory.registers.A & 0o100000) | ((memory.registers.A & 0o77777) + 1)
+export function incr (memory: Memory, operandAddress: MemoryRef): void {
+  // TODO assert erasable
+  memory.registers.A = (memory.registers.A & 0o100000) | ((memory.registers.A & 0o77777) + 1)
 }
