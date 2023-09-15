@@ -15,14 +15,18 @@ export class Memory {
     this.environment = environment
   }
 
-  read (ref: MemoryRef): number {
+  read (ref: MemoryRef, shouldCorrectOverflow?: boolean): number {
+    if (shouldCorrectOverflow === undefined) {
+      shouldCorrectOverflow = true
+    }
+
     let canonicalRef: BankedRef
 
     // If the reference is direct, then it either refers to a memory-mapped register,
     // or to a fixed area of memory.
     if (ref.kind === 'direct') {
       if (this.isRegister(ref.address)) {
-        return this.readRegister(ref.address)
+        return this.readRegister(ref.address, shouldCorrectOverflow)
       } else {
         canonicalRef = this.convertToBanked(ref)
       }
@@ -150,18 +154,26 @@ export class Memory {
         (address === 0o55 || address === 0o56 || address === 60)))
   }
 
-  private readRegister (address: number): number {
+  private readRegister (address: number, shouldCorrectOverflow: boolean): number {
     if (!this.isRegister(address)) {
       throw new AddressOutOfBoundsError(`${address.toString(8)} is not a valid register address in the ${this.environment} environment`)
     }
 
     switch (address) {
       case 0o0:
-        return this.correctOverflow(this.registers.A)
+        if (shouldCorrectOverflow) {
+          return this.correctOverflow(this.registers.A)
+        } else {
+          return this.registers.A
+        }
       case 0o1:
         return this.registers.L
       case 0o2:
-        return this.correctOverflow(this.registers.Q)
+        if (shouldCorrectOverflow) {
+          return this.correctOverflow(this.registers.Q)
+        } else {
+          return this.registers.Q
+        }
       case 0o3:
         return this.registers.EBANK
       case 0o4:
@@ -326,6 +338,15 @@ export interface DeadBank {
    * Writes should be dropped; reads should return all 0s.
    */
   readonly kind: 'deadbank'
+}
+
+export function isSixteenBit (ref: MemoryRef): boolean {
+  switch (ref.kind) {
+    case 'direct':
+      return ref.address === 0 || ref.address === 2
+    default:
+      return false
+  }
 }
 
 export class AddressOutOfBoundsError extends Error {}

@@ -80,6 +80,26 @@ test('Test AD [(-1) + (+2) = (+1)]', () => {
   expect(memory.registers.A).toEqual(0o1)
 })
 
+test('Test DOUBLE during positive overflow condition', () => {
+  // Negative number, but bit 16 is low.
+  // This would happen if A overflowed during a sum of large positive integers.
+  // This test ensures A doesn't get sign-extended prior to the doubling.
+  // Note that as a result, the final answer is mathematically incorrect.
+  memory.registers.A = 0o77776
+  ad(memory, addr0)
+  expect(memory.registers.A).toEqual(0o177774)
+})
+
+test('Test DOUBLE during negative overflow condition', () => {
+  // Positive number, but bit 16 is high.
+  // This would happen if A overflowed during a sum of large negative integers.
+  // This test ensures A doesn't get sign-extended prior to the doubling.
+  // Note that as a result, the final answer is mathematically incorrect.
+  memory.registers.A = 0o100002
+  ad(memory, addr0)
+  expect(memory.registers.A).toEqual(0o000005)
+})
+
 test('Test COM 0o123456 = 0o054321', () => {
   memory.registers.A = 0o123456
   com(memory)
@@ -141,7 +161,7 @@ test('Test INCR A (when A is -0)', () => {
   expect(memory.registers.A).toEqual(0o100000)
 })
 
-test('Test INCR A (when A is in an overflow state', () => {
+test('Test INCR A (when A is in an overflow state)', () => {
   // No overflow correction occurs.
   memory.registers.A = 0o40000
   incr(memory, addr0)

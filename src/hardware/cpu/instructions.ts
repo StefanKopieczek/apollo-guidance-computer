@@ -1,16 +1,14 @@
 import { signExtend } from '../../bitutils/onesComplement'
-import { type Memory, type MemoryRef } from '../memory/memory'
+import { isSixteenBit, type Memory, type MemoryRef } from '../memory/memory'
 
 export function ad (memory: Memory, operandAddress: MemoryRef): void {
-  addToAcc(memory, memory.read(operandAddress))
-}
-
-function addToAcc (memory: Memory, value: number): void {
   const left = memory.registers.A
-  const right = signExtend(value)
+  let right = memory.read(operandAddress, false)
+  if (!isSixteenBit(operandAddress)) {
+    right = signExtend(right)
+  }
   const interim = left + right
-  const result = (interim + (interim >>> 16)) & 0o177777
-  memory.registers.A = result
+  memory.registers.A = (interim + (interim >>> 16)) & 0o177777
 }
 
 export function com (memory: Memory): void {
