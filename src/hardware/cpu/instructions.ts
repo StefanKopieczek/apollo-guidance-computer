@@ -7,3 +7,7 @@ export function ad (memory: Memory, operandAddress: MemoryRef): void {
   const result = (interim & 0o77777) + (interim >>> 15)
   memory.registers.A = (memory.registers.A & 0o100000) | result
 }
+
+export function com (memory: Memory): void {
+  memory.registers.A = (0o177777) & (~memory.registers.A)
+}

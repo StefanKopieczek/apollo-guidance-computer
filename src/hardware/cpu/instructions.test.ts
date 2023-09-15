@@ -1,6 +1,6 @@
 import { Environment } from '../../environment'
 import { Memory, type MemoryRef } from '../memory/memory'
-import { ad } from './instructions'
+import { ad, com } from './instructions'
 
 let memory: Memory
 
@@ -64,4 +64,28 @@ test('Test AD [(-0o37777) + (-0o30000) = (+0o10000)', () => {
   memory.write(addr0o100, 0o47777)
   ad(memory, addr0o100)
   expect(memory.registers.A).toEqual(0o110000)
+})
+
+test('Test COM 0o123456 = 0o054321', () => {
+  memory.registers.A = 0o123456
+  com(memory)
+  expect(memory.registers.A).toEqual(0o54321)
+})
+
+test('Test COM 0o54321 = 0o123456', () => {
+  memory.registers.A = 0o54321
+  com(memory)
+  expect(memory.registers.A).toEqual(0o123456)
+})
+
+test('Test COM 0o000000 = 0o177777', () => {
+  memory.registers.A = 0
+  com(memory)
+  expect(memory.registers.A).toEqual(0o177777)
+})
+
+test('Test COM 0o177777 = 0o000000', () => {
+  memory.registers.A = 0o177777
+  com(memory)
+  expect(memory.registers.A).toEqual(0)
 })
