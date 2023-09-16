@@ -242,7 +242,7 @@ export class Memory {
         if (shouldExtendSign) {
           value = signExtend(value)
         }
-        this.registers.Q = signExtend(value)
+        this.registers.Q = value
         break
       case 0o3:
         this.registers.EBANK = value
