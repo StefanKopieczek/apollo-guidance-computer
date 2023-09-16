@@ -1,6 +1,6 @@
 import { Environment } from '../../environment'
 import { Memory, type MemoryRef } from '../memory/memory'
-import { ad, aug, com, dim, incr } from './instructions'
+import { ad, aug, com, dim, incr, su } from './instructions'
 
 let memory: Memory
 
@@ -117,6 +117,12 @@ test('Test AD Q preserves Q bit 16', () => {
   memory.registers.Q = 0o100000
   ad(memory, addr2)
   expect(memory.registers.Q).toEqual(0o100000)
+})
+
+test('Test AD does not modify operand', () => {
+  memory.registers.L = 0o60
+  ad(memory, addr1)
+  expect(memory.registers.L).toEqual(0o60)
 })
 
 test('Test COM 0o123456 = 0o054321', () => {
@@ -440,4 +446,87 @@ test('Test DIM 0o100', () => {
   memory.write(addr0o100, 0o77776)
   dim(memory, addr0o100)
   expect(memory.read(addr0o100)).toEqual(0o77777)
+})
+
+test('Test SU ([+0o10] - [+0o05] == [+0o03])', () => {
+  memory.registers.A = 0o10
+  memory.write(addr0o100, 0o03)
+  su(memory, addr0o100)
+  expect(memory.registers.A).toEqual(0o05)
+})
+
+test('Test SU ([+0o10] - [-0o03] == [+0o13])', () => {
+  memory.registers.A = 0o10
+  memory.write(addr0o100, 0o77774)
+  su(memory, addr0o100)
+  expect(memory.registers.A).toEqual(0o13)
+})
+
+test('Test SU ([+0o33] - [-0o0] == [+0o33])', () => {
+  memory.registers.A = 0o33
+  memory.write(addr0o100, 0o77777)
+  su(memory, addr0o100)
+  expect(memory.registers.A).toEqual(0o33)
+})
+
+test('Test SU ([+0o33] - [+0o0] == [+0o33])', () => {
+  memory.registers.A = 0o33
+  memory.write(addr0o100, 0o0)
+  su(memory, addr0o100)
+  expect(memory.registers.A).toEqual(0o33)
+})
+
+test('Test SU ([-0o1] - [+0o10] == [-0o11])', () => {
+  memory.registers.A = 0o177776
+  memory.write(addr0o100, 0o10)
+  su(memory, addr0o100)
+  expect(memory.registers.A).toEqual(0o177766)
+})
+
+test('Test SU positive overflow #1', () => {
+  memory.registers.A = 0o37777
+  memory.write(addr0o100, 0o77776) // -1
+  su(memory, addr0o100)
+  expect(memory.registers.A).toEqual(0o040000)
+})
+
+test('Test SU positive overflow #2', () => {
+  memory.registers.A = 0o10
+  memory.write(addr0o100, 0o40000) // -0o37777
+  su(memory, addr0o100)
+  expect(memory.registers.A).toEqual(0o40007)
+})
+
+test('Test SU negative overflow', () => {
+  memory.registers.A = 0o140000 // -0o37777
+  memory.write(addr0o100, 0o20)
+  su(memory, addr0o100)
+  expect(memory.registers.A).toEqual(0o137760)
+})
+
+test('Test SU L', () => {
+  memory.registers.A = 0o50
+  memory.registers.L = 0o30
+  su(memory, addr1) // Address of reg L
+  expect(memory.registers.A).toEqual(0o20)
+})
+
+test('Test SU does not touch operand', () => {
+  memory.registers.A = 0o50
+  memory.registers.L = 0o30
+  su(memory, addr1)
+  expect(memory.registers.L).toEqual(0o30)
+})
+
+test('Test SU Q uses bit 16 of Q', () => {
+  memory.registers.A = 0o140000
+  memory.registers.Q = 0o130000
+  su(memory, addr2)
+  expect(memory.registers.A).toEqual(0o10000)
+})
+
+test('Test SU A', () => {
+  memory.registers.A = 0o12345
+  su(memory, addr0)
+  expect(memory.registers.A).toEqual(0o177777) // -0
 })

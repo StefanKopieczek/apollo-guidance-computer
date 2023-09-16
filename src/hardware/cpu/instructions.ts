@@ -8,20 +8,7 @@ export function ad (memory: Memory, operandAddress: MemoryRef): void {
   // If instead the location is 16 bits wide (as with Q, or the accumulator itself)
   // then its sixteenth bit will be preserved unchanged when loaded, and will then
   // be used normally as part of the addition.
-  const left = memory.registers.A
-  let right = memory.read(operandAddress, false)
-  if (!isSixteenBit(operandAddress)) {
-    right = signExtend(right)
-  }
-  let interim = left + right
-
-  // End-around carry: this is standard ones' complement arithmetic.
-  // When adding two ones' complement numbers, if the final result has a carry,
-  // that carry should be added to the LSB of the result.
-  const carry = interim >>> 16
-  interim += carry
-
-  memory.registers.A = interim & 0o177777
+  addOrMinus(memory, operandAddress, false)
 }
 
 export function com (memory: Memory): void {
@@ -105,4 +92,30 @@ export function dim (memory: Memory, operandAddress: MemoryRef): void {
   let interim = operand + delta
   interim = interim + (interim >>> shift) // End-around carry; see AD
   memory.write(operandAddress, interim & mask, false)
+}
+
+export function su (memory: Memory, operandAddress: MemoryRef): void {
+  addOrMinus(memory, operandAddress, true)
+}
+
+function addOrMinus (memory: Memory, operandAddress: MemoryRef, isMinus: boolean): void {
+  const left = memory.registers.A
+  let right = memory.read(operandAddress, false)
+  if (!isSixteenBit(operandAddress)) {
+    right = signExtend(right)
+  }
+
+  if (isMinus) {
+    right = (~right) & 0o177777
+  }
+
+  let interim = left + right
+
+  // End-around carry: this is standard ones' complement arithmetic.
+  // When adding two ones' complement numbers, if the final result has a carry,
+  // that carry should be added to the LSB of the result.
+  const carry = interim >>> 16
+  interim += carry
+
+  memory.registers.A = interim & 0o177777
 }
