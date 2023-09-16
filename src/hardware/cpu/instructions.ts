@@ -53,9 +53,31 @@ export function incr (memory: Memory, operandAddress: MemoryRef): void {
 }
 
 export function aug (memory: Memory, operandAddress: MemoryRef): void {
-  const operand = memory.registers.A
-  const delta = (operand >= 0o100000) ? 0o177776 : 1
+  // AUG either increments or decrements the value at the given address, so as to
+  // increase its absolute value by 1.
+  // For example, 3 -> 4 but -6 -> -7.
+  // If the target is a 16 bit register, this can trigger the overflow condition.
+  // NOTE: I can't find a consensus as to how 15 bit values behave on overflow.
+  // The AGC 4 manual (as well as O'Brien and the yaYUL manual) either don't specify,
+  // or they say that the operation is applied to the 14 bit value plus the sign;
+  // however, the yaYUL code seems to sign extend 15 bit values and then perform overflow
+  // correction.
+  // I can't see any reason to suppose that overflow correction occurs, so I assume
+  // that e.g. 0o37777 augs to 0o40000 rather than 0o00000.
+  const operand = memory.read(operandAddress, false)
+
+  let mask, shift, delta
+  if (isSixteenBit(operandAddress)) {
+    mask = 0o177777
+    shift = 16
+    delta = (operand >= 0o100000) ? 0o177776 : 1
+  } else {
+    mask = 0o77777
+    shift = 15
+    delta = (operand >= 0o40000) ? 0o77776 : 1
+  }
+
   let interim = operand + delta
-  interim = interim + (interim >>> 16) // End-around carry; see AD
-  memory.registers.A = interim & 0o177777
+  interim = interim + (interim >>> shift) // End-around carry; see AD
+  memory.write(operandAddress, interim & mask, false)
 }

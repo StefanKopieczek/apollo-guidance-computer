@@ -297,3 +297,60 @@ test('Test AUG A treats bit 16 as a sign bit #2', () => {
   aug(memory, addr0)
   expect(memory.registers.A).toEqual(0o100000)
 })
+
+test('Test AUG A rollover #1', () => {
+  memory.registers.A = 0o77777
+  aug(memory, addr0)
+  expect(memory.registers.A).toEqual(0o100000)
+})
+
+test('Test Aug A rollover #2', () => {
+  memory.registers.A = 0o100000
+  aug(memory, addr0)
+  expect(memory.registers.A).toEqual(0o77777)
+})
+
+test('Test AUG Q', () => {
+  memory.registers.Q = 0o35
+  aug(memory, addr2)
+  expect(memory.registers.Q).toEqual(0o36)
+})
+
+test('Test AUG Q overflow', () => {
+  memory.registers.Q = 0o37777
+  aug(memory, addr2)
+  expect(memory.registers.Q).toEqual(0o40000)
+})
+
+test('Test AUG Q uses bit 16 as sign', () => {
+  memory.registers.Q = 0o40000
+  aug(memory, addr2)
+  expect(memory.registers.Q).toEqual(0o40001)
+})
+
+test('Test AUG L overflow', () => {
+  // See the function comments on aug(...) for discussion of this case.
+  memory.registers.L = 0o37777
+  aug(memory, addr1)
+  expect(memory.registers.L).toEqual(0o40000)
+})
+
+test('Test AUG L overflow #2', () => {
+  // See the function comments on aug(...) for discussion of this case.
+  memory.registers.L = 0o40000
+  aug(memory, addr1)
+  expect(memory.registers.L).toEqual(0o37777)
+})
+
+test('Test AUG 0o100', () => {
+  memory.write(addr0o100, 0o77777)
+  aug(memory, addr0o100)
+  expect(memory.read(addr0o100)).toEqual(0o77776)
+})
+
+test('Test AUG 0o100 overflow', () => {
+  // See the function comments on aug(...) for discussion of this case.
+  memory.write(addr0o100, 0o37777)
+  aug(memory, addr0o100)
+  expect(memory.read(addr0o100)).toEqual(0o40000)
+})
