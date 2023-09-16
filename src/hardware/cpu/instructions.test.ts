@@ -175,9 +175,11 @@ test('Test INCR A (when A is -0o37777)', () => {
 })
 
 test('Test INCR A (when A is -0)', () => {
+  // Bit 16 is still incrementable,
+  // and so we roll fully over from (-0) to (+1).
   memory.registers.A = 0o177777
   incr(memory, addr0)
-  expect(memory.registers.A).toEqual(0o100000)
+  expect(memory.registers.A).toEqual(0o000001)
 })
 
 test('Test INCR A (when A is in an overflow state)', () => {
@@ -205,6 +207,12 @@ test('Test INCR L to overflow', () => {
   expect(memory.registers.L).toEqual(0o40000)
 })
 
+test('Test INCR L rollover', () => {
+  memory.registers.L = 0o77777 // -0
+  incr(memory, addr1)
+  expect(memory.registers.L).toEqual(0o00001) // +1
+})
+
 test('Test INCR 0o100', () => {
   memory.write(addr0o100, 0o12345)
   incr(memory, addr0o100)
@@ -215,4 +223,16 @@ test('Test INCR 0o37777', () => {
   memory.write(addr0o100, 0o37777)
   incr(memory, addr0o100)
   expect(memory.read(addr0o100)).toEqual(0o40000)
+})
+
+test('Test INCR 0o100 rollover', () => {
+  memory.write(addr0o100, 0o77777) // -0
+  incr(memory, addr0o100)
+  expect(memory.read(addr0o100)).toEqual(0o00001)
+})
+
+test('Test INCR 0o40000', () => {
+  memory.write(addr0o100, 0o40000)
+  incr(memory, addr0o100)
+  expect(memory.read(addr0o100)).toEqual(0o40001)
 })
