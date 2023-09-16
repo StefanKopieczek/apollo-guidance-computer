@@ -219,7 +219,7 @@ test('Test INCR 0o100', () => {
   expect(memory.read(addr0o100)).toEqual(0o12346)
 })
 
-test('Test INCR 0o37777', () => {
+test('Test INCR 0o100 overflow', () => {
   memory.write(addr0o100, 0o37777)
   incr(memory, addr0o100)
   expect(memory.read(addr0o100)).toEqual(0o40000)
