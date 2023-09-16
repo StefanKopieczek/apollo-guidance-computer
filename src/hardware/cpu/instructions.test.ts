@@ -1,6 +1,6 @@
 import { Environment } from '../../environment'
 import { Memory, type MemoryRef } from '../memory/memory'
-import { ad, aug, com, incr } from './instructions'
+import { ad, aug, com, dim, incr } from './instructions'
 
 let memory: Memory
 
@@ -353,4 +353,91 @@ test('Test AUG 0o100 overflow', () => {
   memory.write(addr0o100, 0o37777)
   aug(memory, addr0o100)
   expect(memory.read(addr0o100)).toEqual(0o40000)
+})
+
+test('Test DIM A (when A is +1)', () => {
+  // Unlike you might expect, DIM of +1 is -0.
+  memory.registers.A = 1
+  dim(memory, addr0)
+  expect(memory.registers.A).toEqual(0o177777)
+})
+
+test('Test DIM A leaves +0 unchanged', () => {
+  memory.registers.A = 0
+  dim(memory, addr0)
+  expect(memory.registers.A).toEqual(0)
+})
+
+test('Test DIM A leaves -0 unchanged', () => {
+  memory.registers.A = 0o177777
+  dim(memory, addr0)
+  expect(memory.registers.A).toEqual(0o177777)
+})
+
+test('Test DIM A (when A is -1)', () => {
+  memory.registers.A = 0o177776
+  dim(memory, addr0)
+  expect(memory.registers.A).toEqual(0o177777) // i.e. -0
+})
+
+test('DIM A (when A is -2)', () => {
+  memory.registers.A = 0o177775
+  dim(memory, addr0)
+  expect(memory.registers.A).toEqual(0o177776) // i.e. -1
+})
+
+test('Test DIM A treats bit 16 as a sign bit #1', () => {
+  // As with AUG A, I believe the 16th bit is used as the sign, so in the event of an
+  // overflow condition, bit 16 rather than 15 determines whether an increment or a decrement occurs.
+  memory.registers.A = 0o77775
+  dim(memory, addr0)
+  expect(memory.registers.A).toEqual(0o77774)
+})
+
+test('Test DIM A treats bit 16 as a sign bit #2', () => {
+  memory.registers.A = 0o100001
+  dim(memory, addr0)
+  expect(memory.registers.A).toEqual(0o100002)
+})
+
+test('Test DIM A rollover (#1)', () => {
+  // If A is +0, but bit 16 is equal to 1 (i.e. if a really big positive rollover occurred)
+  // then DIM should still see the value as a zero and not modify it.
+  // (I think, anyway. It's not documented anywhere I can find.)
+  memory.registers.A = 0o100000
+  dim(memory, addr0)
+  expect(memory.registers.A).toEqual(0o100000)
+})
+
+test('Test DIM A rollover (#2)', () => {
+  // If A is -0, but bit 16 is equal to 0 (i.e. if a really big negative rollover occurred)
+  // then DIM should still see the value as a zero and not modify it.
+  // (I think, anyway. It's not documented anywhere I can find.)
+  memory.registers.A = 0o077777
+  dim(memory, addr0)
+  expect(memory.registers.A).toEqual(0o077777)
+})
+
+test('Test DIM Q', () => {
+  memory.registers.Q = 0o35
+  dim(memory, addr2)
+  expect(memory.registers.Q).toEqual(0o34)
+})
+
+test('Test DIM Q uses bit 16 as sign', () => {
+  memory.registers.Q = 0o40001
+  dim(memory, addr2)
+  expect(memory.registers.Q).toEqual(0o40000)
+})
+
+test('Test DIM L', () => {
+  memory.write(addr1, 0o76543)
+  dim(memory, addr1)
+  expect(memory.registers.L).toEqual(0o76544)
+})
+
+test('Test DIM 0o100', () => {
+  memory.write(addr0o100, 0o77776)
+  dim(memory, addr0o100)
+  expect(memory.read(addr0o100)).toEqual(0o77777)
 })
