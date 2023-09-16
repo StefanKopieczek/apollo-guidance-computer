@@ -51,3 +51,11 @@ export function incr (memory: Memory, operandAddress: MemoryRef): void {
   interim = interim + (interim >>> shift) // End-around carry; see AD
   memory.write(operandAddress, interim & mask, false)
 }
+
+export function aug (memory: Memory, operandAddress: MemoryRef): void {
+  const operand = memory.registers.A
+  const delta = (operand >= 0o100000) ? 0o177776 : 1
+  let interim = operand + delta
+  interim = interim + (interim >>> 16) // End-around carry; see AD
+  memory.registers.A = interim & 0o177777
+}

@@ -1,6 +1,6 @@
 import { Environment } from '../../environment'
 import { Memory, type MemoryRef } from '../memory/memory'
-import { ad, com, incr } from './instructions'
+import { ad, aug, com, incr } from './instructions'
 
 let memory: Memory
 
@@ -235,4 +235,65 @@ test('Test INCR 0o40000', () => {
   memory.write(addr0o100, 0o40000)
   incr(memory, addr0o100)
   expect(memory.read(addr0o100)).toEqual(0o40001)
+})
+
+test('Test AUG A (when A is +0)', () => {
+  memory.registers.A = 0
+  aug(memory, addr0)
+  expect(memory.registers.A).toEqual(1)
+})
+
+test('Test AUG A (when A is +1)', () => {
+  memory.registers.A = 1
+  aug(memory, addr0)
+  expect(memory.registers.A).toEqual(2)
+})
+
+test('Test AUG A (when A is -0)', () => {
+  memory.registers.A = 0o177777
+  aug(memory, addr0)
+  expect(memory.registers.A).toEqual(0o177776) // i.e. -1
+})
+
+test('Test AUG A (when A is -1)', () => {
+  memory.registers.A = 0o177776
+  aug(memory, addr0)
+  expect(memory.registers.A).toEqual(0o177775) // i.e. -2
+})
+
+test('Test AUG A positive overflow', () => {
+  // Here, +0o37777 overflows to -0o37777.
+  // Bit 16 remains unset, indicating that the overflow condition is present.
+  memory.registers.A = 0o37777
+  aug(memory, addr0)
+  expect(memory.registers.A).toEqual(0o40000)
+})
+
+test('Test AUG A negative overflow', () => {
+  // Here, -0o37777 overflows to +0o37777.
+  // Bit 16 remains set, indicating that the overflow condition is present.
+  memory.registers.A = 0o140000
+  aug(memory, addr0)
+  expect(memory.registers.A).toEqual(0o137777)
+})
+
+test('Test AUG A treats bit 16 as a sign bit #1', () => {
+  // I think how this is supposed to work is that in the event of an overflow condition,
+  // i.e. a difference between bits 16 and 15, AUG will treat the 16th bit as the 'true'
+  // sign, using that to decide whether to increment or decrement the value.
+  // This means that for example if you repeatedly run AUG A when A is 0o37777,
+  // you will increment to 0o40000, 0o40001, etc.
+  // If instead AUG respected the 15th bit you'd see oscillation about the overflow point,
+  // since 0o37777 would go to 0o40000 but then 0o40000 would be seen as negative and
+  // would decrement, overflowing in the opposite direction back to 0o37777 again.
+  memory.registers.A = 0o40000
+  aug(memory, addr0)
+  expect(memory.registers.A).toEqual(0o40001)
+})
+
+test('Test AUG A treats bit 16 as a sign bit #2', () => {
+  // As with the previous test, but this time with negative overflow condition.
+  memory.registers.A = 0o100001
+  aug(memory, addr0)
+  expect(memory.registers.A).toEqual(0o100000)
 })
