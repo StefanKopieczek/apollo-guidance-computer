@@ -81,3 +81,28 @@ export function aug (memory: Memory, operandAddress: MemoryRef): void {
   interim = interim + (interim >>> shift) // End-around carry; see AD
   memory.write(operandAddress, interim & mask, false)
 }
+
+export function dim (memory: Memory, operandAddress: MemoryRef): void {
+  // DIM is the inverse of AUG: it increments negative values and decrements positive ones.
+  // The same concerns and considerations discussed in the comments for AUG apply here.
+  const operand = memory.read(operandAddress, false)
+
+  if (((operand & 0o77777) === 0) || ((operand & 0o77777) === 0o77777)) {
+    return
+  }
+
+  let mask, shift, delta
+  if (isSixteenBit(operandAddress)) {
+    mask = 0o177777
+    shift = 16
+    delta = (operand >= 0o100000) ? 1 : 0o177776
+  } else {
+    mask = 0o77777
+    shift = 15
+    delta = (operand >= 0o40000) ? 1 : 0o77776
+  }
+
+  let interim = operand + delta
+  interim = interim + (interim >>> shift) // End-around carry; see AD
+  memory.write(operandAddress, interim & mask, false)
+}
