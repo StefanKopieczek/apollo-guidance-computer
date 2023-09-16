@@ -1,0 +1,8 @@
+The choice of GPL v3 for this project reflects the significant debt owed to the efforts
+of the Virtual AGC Project (https://www.ibiblio.org/apollo/). Although no source from
+Virtual AGC is used in my project, I have at times referred to the yaAGC documentation
+and source code to verify the correctness of this implementation. Since the yaAGC source
+is licensed under "GPL 2.0 or greater" it seemed best for the avoidance of potential license conflicts to use the GPL here also.
+
+My sincere thanks to Ron Burkey and the other collaborators on the VirtualAGC project for
+their incredible work.
